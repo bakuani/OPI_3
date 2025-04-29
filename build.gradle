@@ -1,0 +1,314 @@
+import javax.sound.sampled.*
+import javax.xml.parsers.DocumentBuilderFactory
+
+plugins {
+    id 'org.springframework.boot' version '3.4.1'
+    id 'io.spring.dependency-management' version '1.1.0'
+    id 'java'
+}
+
+version = project.findProperty('projectVersion') ?: '1.0'
+def mainClass = project.findProperty('mainClassName') ?: 'com.example.Main'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+allprojects {
+    group = 'ru.ani'
+    description = 'Проект Web4 (Backend)'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter'
+
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    runtimeOnly 'org.postgresql:postgresql:42.7.4'
+
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': mainClass,
+                'Implementation-Version': project.version
+        )
+    }
+}
+
+tasks.register('compile') {
+    group = 'Build'
+    description = 'Компиляция исходников'
+    dependsOn 'classes'
+}
+
+tasks.register('buildJar') {
+    group = 'Build'
+    description = 'Сборка jar-файла'
+    dependsOn 'compile', 'jar'
+    finalizedBy(unitTest)
+    finalizedBy(music)
+    finalizedBy(scp)
+}
+
+tasks.register('cleanArtefacts') {
+    description = 'Очистка артефактов сборки'
+}
+
+//TODO
+tasks.register('unitTest') {
+    group = 'Verification'
+    description = 'Запуск JUnit-тестов'
+    dependsOn 'buildJar'
+    doLast {
+        println 'Tests run'
+    }
+}
+
+tasks.register('music') {
+    group = 'Custom'
+    description = 'Музик ля ля ля ехехехехеехехехе'
+    dependsOn 'buildJar'
+    doLast {
+        println '🎵 Music playing'
+
+        File audioFile = file("music/golos-domovenka-kuzi.wav")
+        AudioInputStream ais = AudioSystem.getAudioInputStream(audioFile)
+        Clip clip = AudioSystem.getClip()
+        clip.open(ais)
+        clip.start()
+
+        Thread.sleep((long) (clip.getMicrosecondLength() / 1000))
+
+        clip.close()
+        ais.close()
+    }
+}
+
+tasks.register('native2ascii') {
+    group = 'Localization'
+    description = 'Convert all .properties from UTF-8 to ASCII escapes using Ant native2ascii'
+
+    def srcDir = file('src/main/resources')
+    def destDir = layout.buildDirectory.dir('converted-resources').get().asFile
+
+    inputs.dir srcDir
+    outputs.dir destDir
+
+    doFirst {
+        println '***** NATIVE2ASCII STARTED *****'
+        if (destDir.exists()) {
+            destDir.deleteDir()
+        }
+        destDir.mkdirs()
+    }
+
+    doLast {
+        ant.native2ascii(
+                src: srcDir,
+                dest: destDir,
+                encoding: 'UTF-8',
+                includes: '**/*.properties'
+        )
+        println '***** NATIVE2ASCII COMPLETED *****'
+    }
+}
+
+
+// TODO
+tasks.register('doc', Javadoc) {
+    group = 'Documentation'
+    description = 'Генерация JavaDoc'
+    destinationDir = file("$buildDir/docs/javadoc")
+    options.encoding = 'UTF-8'
+}
+
+// TODO
+tasks.register('docArchive', Zip) {
+    group = 'Documentation'
+    description = 'Архивирование JavaDoc с MD5 и SHA1'
+    dependsOn 'doc'
+    from doc.destinationDir
+    archiveFileName = "docs-${project.version}.zip"
+    doLast {
+        println 'Вычисляем MD5 и SHA1 для файлов документации...'
+        fileTree(dir: doc.destinationDir, include: '**/*').files.each { File file ->
+            // Генерация MD5
+            def md5 = file.bytes.encodeHex().toString()
+            file("${file}.md5").text = md5
+            def sha1Digest = java.security.MessageDigest.getInstance("SHA-1")
+            sha1Digest.update(file.bytes)
+            def sha1 = sha1Digest.digest().encodeHex().toString()
+            file("${file}.sha1").text = sha1
+        }
+    }
+}
+
+tasks.register('xmlValidate') {
+    group = 'Verification'
+    description = 'Валидация всех XML-файлов проекта (DocumentBuilder)'
+    doLast {
+        println 'Validating XML-file...'
+        def factory = DocumentBuilderFactory.newInstance()
+        factory.setNamespaceAware(true)
+        factory.setValidating(false)
+        def builder = factory.newDocumentBuilder()
+        fileTree(dir: 'src/main/resources/', include: '*.xml').each { File xmlFile ->
+            try {
+                xmlFile.withInputStream { is -> builder.parse(is) }
+                println "OK: ${xmlFile}"
+            } catch (Exception e) {
+                throw new GradleException("Validation error XML: ${xmlFile}", e)
+            }
+        }
+    }
+}
+
+//TODO
+tasks.register('scp') {
+    group = 'Deployment'
+    description = 'Перенос собранного jar-файла на удалённый сервер по SCP'
+    dependsOn 'buildJar'
+    doLast {
+        println 'Scp command run'
+    }
+    // Замените user@server:/path на реальные значения
+    // commandLine 'scp', "${buildDir}/libs/${project.name}-${project.version}.jar", 'user@server:/remote/path/'
+}
+
+//TODO
+tasks.register('team') {
+    group = 'Custom'
+    description = 'Получение 4 предыдущих ревизий из SVN и сборка их в zip'
+    doLast {
+        println 'Извлекаем последние 4 ревизии из SVN...'
+        def revisions = []
+        def log = 'svn log -l 4 --quiet'.execute().text
+        log.eachLine { line ->
+            if (line =~ /^r(\d+)/) {
+                revisions << (line =~ /^r(\d+)/)[0][1]
+            }
+        }
+        def tmpDir = file("$buildDir/svnRevs")
+        tmpDir.mkdirs()
+        revisions.each { rev ->
+            println "Обновляем SVN до ревизии $rev и собираем проект..."
+            exec { commandLine 'svn', 'update', '-r', rev }
+            exec { commandLine 'gradle', 'buildJar' }  // рекурсивный вызов задач
+            copy {
+                from "${buildDir}/libs/${project.name}-${project.version}.jar"
+                into tmpDir
+                rename { "${project.name}-${rev}.jar" }
+            }
+        }
+        ant.zip(destfile: "$buildDir/archives/team_revisions.zip", basedir: tmpDir)
+        println 'Готов архив с предыдущими ревизиями.'
+    }
+}
+
+tasks.register('runJava8', JavaExec) {
+    group = 'Run'
+    description = 'Запуск программы под Java 8'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = mainClass
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+    jvmArgs = ['-Xms256m', '-Xmx512m']
+}
+
+tasks.register('runWithArgs', JavaExec) {
+    group = 'Run'
+    description = 'Запуск программы с заданными VM-аргументами'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = mainClass
+    args 'arg1', 'arg2'
+    jvmArgs '-Dexample.property=value', '-Xmx1024m'
+}
+
+tasks.register('report') {
+    group = 'Reporting'
+    description = 'Сохранение JUnit-отчёта (XML) и коммит в Git'
+    dependsOn 'unitTest'
+    doLast {
+        println 'Коммитим отчет JUnit в Git...'
+        exec { commandLine 'git', 'add', "${buildDir}/test-results/test/TEST-*.xml" }
+        exec { commandLine 'git', 'commit', '-m', "Add JUnit report" }
+    }
+}
+
+tasks.register('alt') {
+    group = 'Custom'
+    description = 'Создание альтернативной версии с заменой имён через regex'
+    doLast {
+        println 'Генерируем альтернативную версию проекта с заменой имён...'
+        def altSrcDir = file("$buildDir/altSrc")
+        copy {
+            from 'src/main/java'
+            into altSrcDir
+            filter { String line -> line.replaceAll('OldName', 'NewName') }
+        }
+        ant.javac(srcdir: altSrcDir, destdir: "$buildDir/altClasses",
+                classpath: configurations.compileClasspath.asPath)
+        ant.jar(destfile: "$buildDir/libs/${project.name}-alt.jar", basedir: "$buildDir/altClasses",
+                manifest: ['Main-Class': mainClass])
+        println 'Альтернативный jar создан: ' + "$buildDir/libs/${project.name}-alt.jar"
+    }
+}
+
+tasks.register('diff') {
+    group = 'Version Control'
+    description = 'Проверка состояния git и автоматический коммит при наличии изменений'
+    doLast {
+        println 'Проверяем наличие изменений в Git...'
+        def status = 'git status --porcelain'.execute().text.trim()
+        if (status) {
+            println 'Найдены изменения, коммитим...'
+            exec { commandLine 'git', 'add', '--all' }
+            exec { commandLine 'git', 'commit', '-m', "Auto commit changes" }
+        } else {
+            println 'Нет изменений для коммита.'
+        }
+    }
+}
+
+tasks.register('history') {
+    group = 'Version Control'
+    description = 'Автоматический откат к предыдущим SVN-ревизиям, если сборка неудачна'
+    doLast {
+        println 'Пробуем собрать проект...'
+        def currentRev = ('svn info --show-item revision'.execute().text.trim() as int)
+        def rev = currentRev
+        while (rev > 0) {
+            try {
+                exec { commandLine 'gradle', 'buildJar' }
+                println "Сборка успешна на ревизии $rev."
+                break
+            } catch (Exception e) {
+                rev--
+                if (rev <= 0) {
+                    println 'Не удалось собрать ни одну ревизию.'
+                    break
+                }
+                println "Сборка не удалась, пробуем откат к ревизии $rev..."
+                exec { commandLine 'svn', 'update', '-r', rev.toString() }
+            }
+        }
+    }
+}
