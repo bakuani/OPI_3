@@ -1,9 +1,11 @@
 import javax.sound.sampled.*
 import javax.xml.parsers.DocumentBuilderFactory
+import org.gradle.api.plugins.jvm.JvmTestSuite
 
 plugins {
-    id 'org.springframework.boot' version '3.4.1'
+    id 'org.springframework.boot' version '3.4.5'
     id 'io.spring.dependency-management' version '1.1.0'
+    id 'jvm-test-suite'
     id 'java'
 }
 
@@ -52,6 +54,14 @@ jar {
     }
 }
 
+testing {
+    suites {
+        test(JvmTestSuite) {
+            useJUnitJupiter()
+        }
+    }
+}
+
 tasks.register('compile') {
     group = 'Build'
     description = 'Компиляция исходников'
@@ -62,22 +72,19 @@ tasks.register('buildJar') {
     group = 'Build'
     description = 'Сборка jar-файла'
     dependsOn 'compile', 'jar'
-    finalizedBy(unitTest)
-    finalizedBy(music)
-    finalizedBy(scp)
 }
 
 tasks.register('cleanArtefacts') {
     description = 'Очистка артефактов сборки'
 }
 
-//TODO
 tasks.register('unitTest') {
     group = 'Verification'
     description = 'Запуск JUnit-тестов'
-    dependsOn 'buildJar'
+    dependsOn 'buildJar', 'test'
+
     doLast {
-        println 'Tests run'
+        println 'JUnit-tests done.'
     }
 }
 
@@ -86,7 +93,7 @@ tasks.register('music') {
     description = 'Музик ля ля ля ехехехехеехехехе'
     dependsOn 'buildJar'
     doLast {
-        println '🎵 Music playing'
+        println 'Music playing'
 
         File audioFile = file("music/golos-domovenka-kuzi.wav")
         AudioInputStream ais = AudioSystem.getAudioInputStream(audioFile)
@@ -111,14 +118,6 @@ tasks.register('native2ascii') {
     inputs.dir srcDir
     outputs.dir destDir
 
-    doFirst {
-        println '***** NATIVE2ASCII STARTED *****'
-        if (destDir.exists()) {
-            destDir.deleteDir()
-        }
-        destDir.mkdirs()
-    }
-
     doLast {
         ant.native2ascii(
                 src: srcDir,
@@ -129,7 +128,6 @@ tasks.register('native2ascii') {
         println '***** NATIVE2ASCII COMPLETED *****'
     }
 }
-
 
 // TODO
 tasks.register('doc', Javadoc) {
@@ -244,14 +242,39 @@ tasks.register('runWithArgs', JavaExec) {
 
 tasks.register('report') {
     group = 'Reporting'
-    description = 'Сохранение JUnit-отчёта (XML) и коммит в Git'
+    description = 'Сохраняет JUnit-отчёты (XML) и коммитит их в Git после успешных тестов'
+
     dependsOn 'unitTest'
+
     doLast {
-        println 'Коммитим отчет JUnit в Git...'
-        exec { commandLine 'git', 'add', "${buildDir}/test-results/test/TEST-*.xml" }
-        exec { commandLine 'git', 'commit', '-m', "Add JUnit report" }
+        def resultsDir = file("build/test-results/test")
+        if (!resultsDir.exists() || resultsDir.listFiles()?.length == 0) {
+            println "No JUnit-reports (build/test-results/test). Maybe tests haven't been ran"
+            return
+        }
+
+        def xmls = resultsDir.listFiles().findAll { it.name.endsWith('.xml') }
+        if (!xmls) {
+            println "No XML-reports for commit"
+            return
+        }
+
+        println "Add these JUnit-reports into Git:"
+        xmls.each { f ->
+            println "  - ${f.name}"
+            exec {
+                commandLine 'git', 'add', f.absolutePath
+            }
+        }
+
+        println "Running git commit..."
+        exec {
+            commandLine 'git', 'commit', '-m', "Add JUnit reports: ${xmls*.name.join(', ')}"
+        }
+        println "Report: JUnit-reports commited."
     }
 }
+
 
 tasks.register('alt') {
     group = 'Custom'
