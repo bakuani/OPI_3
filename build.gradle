@@ -19,7 +19,7 @@ java {
 
 allprojects {
     group = 'ru.ani'
-    description = 'Проект Web4 (Backend)'
+    description = 'Web4 Project (Backend)'
 }
 
 repositories {
@@ -63,37 +63,38 @@ testing {
 }
 
 tasks.register('compile') {
-    group = 'Build'
-    description = 'Компиляция исходников'
+    group = 'Custom'
+    description = 'Compile sources'
     dependsOn 'classes'
 }
 
 tasks.register('buildJar') {
-    group = 'Build'
-    description = 'Сборка jar-файла'
+    group = 'Custom'
+    description = 'Build JAR file'
     dependsOn 'compile', 'jar'
 }
 
-tasks.register('cleanArtefacts') {
-    description = 'Очистка артефактов сборки'
+tasks.register('cleanArtifacts') {
+    group = 'Custom'
+    description = 'Clean build artifacts'
 }
 
 tasks.register('unitTest') {
-    group = 'Verification'
-    description = 'Запуск JUnit-тестов'
+    group = 'Custom'
+    description = 'Run JUnit tests'
     dependsOn 'buildJar', 'test'
 
     doLast {
-        println 'JUnit-tests done.'
+        println 'JUnit tests completed.'
     }
 }
 
 tasks.register('music') {
     group = 'Custom'
-    description = 'Музик ля ля ля ехехехехеехехехе'
+    description = 'Play music (la la la)'
     dependsOn 'buildJar'
     doLast {
-        println 'Music playing'
+        println 'Playing music...'
 
         File audioFile = file("music/golos-domovenka-kuzi.wav")
         AudioInputStream ais = AudioSystem.getAudioInputStream(audioFile)
@@ -109,10 +110,10 @@ tasks.register('music') {
 }
 
 tasks.register('native2ascii') {
-    group = 'Localization'
-    description = 'Convert all .properties from UTF-8 to ASCII escapes using Ant native2ascii'
+    group = 'Custom'
+    description = 'Convert .properties files from UTF-8 to ASCII'
 
-    def srcDir = file('src/main/resources')
+    def srcDir = file('src/main/resources/locales/')
     def destDir = layout.buildDirectory.dir('converted-resources').get().asFile
 
     inputs.dir srcDir
@@ -125,29 +126,26 @@ tasks.register('native2ascii') {
                 encoding: 'UTF-8',
                 includes: '**/*.properties'
         )
-        println '***** NATIVE2ASCII COMPLETED *****'
     }
 }
 
-// TODO
 tasks.register('doc', Javadoc) {
-    group = 'Documentation'
-    description = 'Генерация JavaDoc'
+    group = 'Custom'
+    description = 'Generate JavaDoc'
     destinationDir = file("$buildDir/docs/javadoc")
     options.encoding = 'UTF-8'
 }
 
-// TODO
 tasks.register('docArchive', Zip) {
-    group = 'Documentation'
-    description = 'Архивирование JavaDoc с MD5 и SHA1'
+    group = 'Custom'
+    description = 'Archive JavaDoc with MD5 and SHA1 checksums'
     dependsOn 'doc'
     from doc.destinationDir
     archiveFileName = "docs-${project.version}.zip"
     doLast {
-        println 'Вычисляем MD5 и SHA1 для файлов документации...'
+        println 'Calculating MD5 and SHA1 for documentation files...'
         fileTree(dir: doc.destinationDir, include: '**/*').files.each { File file ->
-            // Генерация MD5
+            // Generate MD5
             def md5 = file.bytes.encodeHex().toString()
             file("${file}.md5").text = md5
             def sha1Digest = java.security.MessageDigest.getInstance("SHA-1")
@@ -159,10 +157,10 @@ tasks.register('docArchive', Zip) {
 }
 
 tasks.register('xmlValidate') {
-    group = 'Verification'
-    description = 'Валидация всех XML-файлов проекта (DocumentBuilder)'
+    group = 'Custom'
+    description = 'Validate all project XML files using DocumentBuilder'
     doLast {
-        println 'Validating XML-file...'
+        println 'Validating XML files...'
         def factory = DocumentBuilderFactory.newInstance()
         factory.setNamespaceAware(true)
         factory.setValidating(false)
@@ -170,32 +168,30 @@ tasks.register('xmlValidate') {
         fileTree(dir: 'src/main/resources/', include: '*.xml').each { File xmlFile ->
             try {
                 xmlFile.withInputStream { is -> builder.parse(is) }
-                println "OK: ${xmlFile}"
+                println "Valid: ${xmlFile}"
             } catch (Exception e) {
-                throw new GradleException("Validation error XML: ${xmlFile}", e)
+                throw new GradleException("XML validation error in file: ${xmlFile}", e)
             }
         }
     }
 }
 
-//TODO
 tasks.register('scp') {
-    group = 'Deployment'
-    description = 'Перенос собранного jar-файла на удалённый сервер по SCP'
+    group = 'Custom'
+    description = 'Transfer the built JAR to a remote server via SCP'
     dependsOn 'buildJar'
     doLast {
-        println 'Scp command run'
+        println 'Executing SCP transfer...'
     }
-    // Замените user@server:/path на реальные значения
+    // Replace user@server:/path with actual values
     // commandLine 'scp', "${buildDir}/libs/${project.name}-${project.version}.jar", 'user@server:/remote/path/'
 }
 
-//TODO
 tasks.register('team') {
     group = 'Custom'
-    description = 'Получение 4 предыдущих ревизий из SVN и сборка их в zip'
+    description = 'Retrieve last 4 SVN revisions and package them into ZIP'
     doLast {
-        println 'Извлекаем последние 4 ревизии из SVN...'
+        println 'Fetching last 4 SVN revisions...'
         def revisions = []
         def log = 'svn log -l 4 --quiet'.execute().text
         log.eachLine { line ->
@@ -206,9 +202,9 @@ tasks.register('team') {
         def tmpDir = file("$buildDir/svnRevs")
         tmpDir.mkdirs()
         revisions.each { rev ->
-            println "Обновляем SVN до ревизии $rev и собираем проект..."
+            println "Updating SVN to revision $rev and building project..."
             exec { commandLine 'svn', 'update', '-r', rev }
-            exec { commandLine 'gradle', 'buildJar' }  // рекурсивный вызов задач
+            exec { commandLine 'gradle', 'buildJar' }  // recursive task invocation
             copy {
                 from "${buildDir}/libs/${project.name}-${project.version}.jar"
                 into tmpDir
@@ -216,13 +212,13 @@ tasks.register('team') {
             }
         }
         ant.zip(destfile: "$buildDir/archives/team_revisions.zip", basedir: tmpDir)
-        println 'Готов архив с предыдущими ревизиями.'
+        println 'Archive with previous revisions is ready.'
     }
 }
 
 tasks.register('runJava8', JavaExec) {
-    group = 'Run'
-    description = 'Запуск программы под Java 8'
+    group = 'Custom'
+    description = 'Run application with Java 8'
     classpath = sourceSets.main.runtimeClasspath
     mainClass = mainClass
     javaLauncher = javaToolchains.launcherFor {
@@ -232,8 +228,8 @@ tasks.register('runJava8', JavaExec) {
 }
 
 tasks.register('runWithArgs', JavaExec) {
-    group = 'Run'
-    description = 'Запуск программы с заданными VM-аргументами'
+    group = 'Custom'
+    description = 'Run program with specified VM arguments'
     classpath = sourceSets.main.runtimeClasspath
     mainClass = mainClass
     args 'arg1', 'arg2'
@@ -241,25 +237,24 @@ tasks.register('runWithArgs', JavaExec) {
 }
 
 tasks.register('report') {
-    group = 'Reporting'
-    description = 'Сохраняет JUnit-отчёты (XML) и коммитит их в Git после успешных тестов'
-
+    group = 'Custom'
+    description = 'Save JUnit reports (XML) and commit them to Git after successful tests'
     dependsOn 'unitTest'
 
     doLast {
         def resultsDir = file("build/test-results/test")
         if (!resultsDir.exists() || resultsDir.listFiles()?.length == 0) {
-            println "No JUnit-reports (build/test-results/test). Maybe tests haven't been ran"
+            println "No JUnit reports found in build/test-results/test. Tests might not have run."
             return
         }
 
         def xmls = resultsDir.listFiles().findAll { it.name.endsWith('.xml') }
         if (!xmls) {
-            println "No XML-reports for commit"
+            println "No XML reports found for commit"
             return
         }
 
-        println "Add these JUnit-reports into Git:"
+        println "Adding the following JUnit reports to Git:"
         xmls.each { f ->
             println "  - ${f.name}"
             exec {
@@ -267,20 +262,19 @@ tasks.register('report') {
             }
         }
 
-        println "Running git commit..."
+        println "Executing git commit..."
         exec {
             commandLine 'git', 'commit', '-m', "Add JUnit reports: ${xmls*.name.join(', ')}"
         }
-        println "Report: JUnit-reports commited."
+        println "JUnit reports committed successfully."
     }
 }
 
-
 tasks.register('alt') {
     group = 'Custom'
-    description = 'Создание альтернативной версии с заменой имён через regex'
+    description = 'Create alternative version with name replacement via regex'
     doLast {
-        println 'Генерируем альтернативную версию проекта с заменой имён...'
+        println 'Generating alternative project version with name replacement...'
         def altSrcDir = file("$buildDir/altSrc")
         copy {
             from 'src/main/java'
@@ -291,45 +285,45 @@ tasks.register('alt') {
                 classpath: configurations.compileClasspath.asPath)
         ant.jar(destfile: "$buildDir/libs/${project.name}-alt.jar", basedir: "$buildDir/altClasses",
                 manifest: ['Main-Class': mainClass])
-        println 'Альтернативный jar создан: ' + "$buildDir/libs/${project.name}-alt.jar"
+        println 'Alternative JAR created: ' + "$buildDir/libs/${project.name}-alt.jar"
     }
 }
 
 tasks.register('diff') {
-    group = 'Version Control'
-    description = 'Проверка состояния git и автоматический коммит при наличии изменений'
+    group = 'Custom'
+    description = 'Check Git status and auto-commit changes if present'
     doLast {
-        println 'Проверяем наличие изменений в Git...'
+        println 'Checking for Git changes...'
         def status = 'git status --porcelain'.execute().text.trim()
         if (status) {
-            println 'Найдены изменения, коммитим...'
+            println 'Changes detected, committing...'
             exec { commandLine 'git', 'add', '--all' }
             exec { commandLine 'git', 'commit', '-m', "Auto commit changes" }
         } else {
-            println 'Нет изменений для коммита.'
+            println 'No changes to commit.'
         }
     }
 }
 
 tasks.register('history') {
-    group = 'Version Control'
-    description = 'Автоматический откат к предыдущим SVN-ревизиям, если сборка неудачна'
+    group = 'Custom'
+    description = 'Automatically revert to previous SVN revisions if build fails'
     doLast {
-        println 'Пробуем собрать проект...'
+        println 'Attempting to build the project...'
         def currentRev = ('svn info --show-item revision'.execute().text.trim() as int)
         def rev = currentRev
         while (rev > 0) {
             try {
                 exec { commandLine 'gradle', 'buildJar' }
-                println "Сборка успешна на ревизии $rev."
+                println "Build successful at revision $rev."
                 break
             } catch (Exception e) {
                 rev--
                 if (rev <= 0) {
-                    println 'Не удалось собрать ни одну ревизию.'
+                    println 'Failed to build any revision.'
                     break
                 }
-                println "Сборка не удалась, пробуем откат к ревизии $rev..."
+                println "Build failed, reverting to revision $rev..."
                 exec { commandLine 'svn', 'update', '-r', rev.toString() }
             }
         }
