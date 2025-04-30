@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ru.ani.web.services.CheckPointTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2025-04-30T10:50:48.068Z" hostname="DESKTOP-64QA2AJ" time="0.091">
+<testsuite name="ru.ani.web.services.CheckPointTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2025-04-30T10:58:57.940Z" hostname="DESKTOP-64QA2AJ" time="0.093">
   <properties/>
-  <testcase name="testPointOutsideAllAreas()" classname="ru.ani.web.services.CheckPointTest" time="0.067"/>
-  <testcase name="testPointInSecondQuadrantTriangle()" classname="ru.ani.web.services.CheckPointTest" time="0.004"/>
-  <testcase name="testPointInFourthQuadrantCircle()" classname="ru.ani.web.services.CheckPointTest" time="0.002"/>
+  <testcase name="testPointOutsideAllAreas()" classname="ru.ani.web.services.CheckPointTest" time="0.065"/>
+  <testcase name="testPointInSecondQuadrantTriangle()" classname="ru.ani.web.services.CheckPointTest" time="0.009"/>
+  <testcase name="testPointInFourthQuadrantCircle()" classname="ru.ani.web.services.CheckPointTest" time="0.001"/>
   <testcase name="testPointInFirstQuadrantRectangle()" classname="ru.ani.web.services.CheckPointTest" time="0.002"/>
   <testcase name="testPointOnTriangleBorder()" classname="ru.ani.web.services.CheckPointTest" time="0.002"/>
-  <testcase name="testPointOutsideCircleButInQuadrant()" classname="ru.ani.web.services.CheckPointTest" time="0.002"/>
-  <testcase name="testPointOnRectangleBorder()" classname="ru.ani.web.services.CheckPointTest" time="0.002"/>
+  <testcase name="testPointOutsideCircleButInQuadrant()" classname="ru.ani.web.services.CheckPointTest" time="0.001"/>
+  <testcase name="testPointOnRectangleBorder()" classname="ru.ani.web.services.CheckPointTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>
