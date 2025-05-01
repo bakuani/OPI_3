@@ -72,7 +72,7 @@ tasks.register('compile') {
 tasks.register('buildJar') {
     group = 'Custom'
     description = 'Build JAR file'
-    dependsOn 'compile', 'jar'
+    dependsOn 'compile', 'bootJar'
 }
 
 tasks.register('cleanArtifacts') {
