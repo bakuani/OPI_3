@@ -14,12 +14,12 @@ import java.io.IOException;
 
 public class JwtFilter extends OncePerRequestFilter {
 
-    private final JwtUtil jwtUtil;
+    private final JwtUtil jwtUtilityity;
     private final UserDetailsService userDetailsService;
 
 
-    public JwtFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService) {
-        this.jwtUtil = jwtUtil;
+    public JwtFilter(JwtUtil jwtUtilityity, UserDetailsService userDetailsService) {
+        this.jwtUtilityity = jwtUtilityity;
         this.userDetailsService = userDetailsService;
     }
 
@@ -31,7 +31,7 @@ public class JwtFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7); //Обрезает префикс Bearer , оставляя только сам токен
 
-            if (jwtUtil.validateToken(token)) {
+            if (jwtUtilityity.validateToken(token)) {
                 authenticateUserFromJwt(token);
             } else {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -43,7 +43,7 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     private void authenticateUserFromJwt(String jwtToken) {
-        String username = jwtUtil.getUsernameFromToken(jwtToken); //Извлечение имени пользователя из токена
+        String username = jwtUtilityity.getUsernameFromToken(jwtToken); //Извлечение имени пользователя из токена
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(username); //Загрузка пользователя через UserDetailsService
 

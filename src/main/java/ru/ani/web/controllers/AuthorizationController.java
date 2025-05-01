@@ -15,19 +15,19 @@ import java.util.Map;
 @RestController
 public class AuthorizationController {
 
-    private UserRepository userRepository;
+    private UserRepository userRep;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    private JwtUtil jwtUtil;
+    private JwtUtil jwtUtilityity;
 
     @Autowired
     public AuthorizationController(
-            UserRepository userRepository,
-            JwtUtil jwtUtil
+            UserRepository userRep,
+            JwtUtil jwtUtilityity
     ) {
-        this.userRepository = userRepository;
-        this.jwtUtil = jwtUtil;
+        this.userRep = userRep;
+        this.jwtUtilityity = jwtUtilityity;
     }
 
     @PostMapping("/api/login")
@@ -39,7 +39,7 @@ public class AuthorizationController {
             return new ResponseEntity<>(Map.of("error", "Логин и пароль не могут быть пустыми"), HttpStatus.BAD_REQUEST);
         }
 
-        User existingUser = userRepository.findByUsername(username);
+        User existingUser = userRep.findByUsername(username);
         if (existingUser == null) {
             return new ResponseEntity<>(Map.of("error", "Пользователь не зарегистрирован"), HttpStatus.NOT_FOUND);
         }
@@ -48,7 +48,7 @@ public class AuthorizationController {
             return new ResponseEntity<>(Map.of("error", "Неправильный пароль"), HttpStatus.UNAUTHORIZED);
         }
 
-        String token = jwtUtil.generateToken(user.getId(), user.getUsername());
+        String token = jwtUtilityity.generateToken(user.getId(), user.getUsername());
 
         return new ResponseEntity<>(Map.of(
                 "message", "Успешный вход",
@@ -66,14 +66,14 @@ public class AuthorizationController {
             return new ResponseEntity<>(Map.of("error", "Логин и пароль не могут быть пустыми"), HttpStatus.BAD_REQUEST);
         }
 
-        if (userRepository.existsByUsername(username)) {
+        if (userRep.existsByUsername(username)) {
             return new ResponseEntity<>(Map.of("message", "Пользователь уже зарегистрирован"), HttpStatus.OK);
         }
 
         String hashedPassword = passwordEncoder.encode(password);
         user.setPassword(hashedPassword);
 
-        userRepository.save(user);
+        userRep.save(user);
         return new ResponseEntity<>(Map.of("message", "Пользователь успешно зарегистрирован"), HttpStatus.OK);
     }
 
@@ -84,18 +84,18 @@ public class AuthorizationController {
         }
 
         String token = authHeader.substring(7);
-        if (!jwtUtil.validateToken(token)) {
+        if (!jwtUtilityity.validateToken(token)) {
             return new ResponseEntity<>(Map.of("error", "Невалидный токен"), HttpStatus.UNAUTHORIZED);
         }
 
-        String username = jwtUtil.getUsernameFromToken(token);
+        String username = jwtUtilityity.getUsernameFromToken(token);
         return new ResponseEntity<>(Map.of("message", "Добро пожаловать, " + username), HttpStatus.OK);
     }
 
     @GetMapping("/api/logout")
     public ResponseEntity<Map<String, String>> logout(HttpServletRequest request) {
-        String token = jwtUtil.getTokenFromRequest(request);
-        jwtUtil.invalidateToken(token);
+        String token = jwtUtilityity.getTokenFromRequest(request);
+        jwtUtilityity.invalidateToken(token);
         return new ResponseEntity<>(Map.of("message", "Успешный выход"), HttpStatus.OK);
     }
 }

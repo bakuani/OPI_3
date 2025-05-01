@@ -30,20 +30,20 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfiguration {
 
-    private final UserRepository userRepository;
-    private final JwtUtil jwtUtil;
+    private final UserRepository userRep;
+    private final JwtUtil jwtUtilityity;
 
     @Autowired
-    public SecurityConfiguration(UserRepository userRepository, JwtUtil jwtTokenUtil) {
-        this.userRepository = userRepository;
-        this.jwtUtil = jwtTokenUtil;
+    public SecurityConfiguration(UserRepository userRep, JwtUtil jwtTokenUtil) {
+        this.userRep = userRep;
+        this.jwtUtilityity = jwtTokenUtil;
     }
 
     //загрузка пользователей из бд
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> {
-            User user = userRepository.findByUsername(username);
+            User user = userRep.findByUsername(username);
             if (user == null) {
                 throw new UsernameNotFoundException(username);
             }
@@ -62,7 +62,7 @@ public class SecurityConfiguration {
                         .anyRequest().authenticated() //Все остальные требуют аутентификации
                         // СНАЧАЛА СПЕЦИФИЧНЫЕ ПОТОМ ОБЩИЕ ПРАВИЛА
                 )
-                .addFilterBefore(new JwtFilter(jwtUtil, userDetailsService()), UsernamePasswordAuthenticationFilter.class) //Кастомный фильтр JwtFilter включается в цепочку фильтров перед стандартным фильтром аутентификации
+                .addFilterBefore(new JwtFilter(jwtUtilityity, userDetailsService()), UsernamePasswordAuthenticationFilter.class) //Кастомный фильтр JwtFilter включается в цепочку фильтров перед стандартным фильтром аутентификации
                 .build();
     }
 
