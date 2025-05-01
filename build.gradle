@@ -237,24 +237,38 @@ tasks.register('team') {
     }
 }
 
-tasks.register('runJava8', JavaExec) {
-    group = 'Custom'
-    description = 'Run application with Java 8'
-    classpath = sourceSets.main.runtimeClasspath
-    mainClass = mainClass
-    javaLauncher = javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(8)
-    }
-    jvmArgs = ['-Xms256m', '-Xmx512m']
-}
+tasks.register('env', JavaExec) {
+    group = 'Build'
+    description = 'Build and run the JAR with custom environment settings from env.properties'
+    dependsOn 'buildJar'
 
-tasks.register('runWithArgs', JavaExec) {
-    group = 'Custom'
-    description = 'Run program with specified VM arguments'
-    classpath = sourceSets.main.runtimeClasspath
-    mainClass = mainClass
-    args 'arg1', 'arg2'
-    jvmArgs '-Dexample.property=value', '-Xmx1024m'
+    def envFile = file("env.properties")
+    if (!envFile.exists()) {
+        throw new GradleException("File env.properties not found in project root")
+    }
+
+    def props = new Properties()
+    envFile.withInputStream { props.load(it) }
+
+    def mainClassName = props.getProperty("main.class", "ru.ani.web.BackendApplication")
+    def javaVersionStr = props.getProperty("java.version", "23")
+    def jvmArgsProp = props.getProperty("jvm.args", "")
+    def customJvmArgs = jvmArgsProp.tokenize()
+
+    println "Running with main class: ${mainClassName}"
+    println "Java version: ${javaVersionStr}"
+    println "JVM arguments: ${customJvmArgs}"
+
+    def jarTask = tasks.named('bootJar').get() as Jar
+    def jarFile = jarTask.archiveFile.get().asFile
+
+    executable = javaLauncher.get().executablePath
+    args = ['-jar', jarFile.absolutePath]
+    jvmArgs = customJvmArgs
+
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(javaVersionStr.toInteger())
+    })
 }
 
 tasks.register('report') {
@@ -291,6 +305,7 @@ tasks.register('report') {
     }
 }
 
+// TODO
 tasks.register('alt') {
     group = 'Custom'
     description = 'Create alternative version with name replacement via regex'
@@ -310,6 +325,7 @@ tasks.register('alt') {
     }
 }
 
+// TODO
 tasks.register('diff') {
     group = 'Custom'
     description = 'Check Git status and auto-commit changes if present'
@@ -326,6 +342,7 @@ tasks.register('diff') {
     }
 }
 
+// TODO
 tasks.register('history') {
     group = 'Custom'
     description = 'Automatically revert to previous SVN revisions if build fails'
