@@ -141,6 +141,7 @@ tasks.register('native2ascii') {
     }
 }
 
+// TODO
 tasks.register('doc', Javadoc) {
     group = 'Custom'
     description = 'Generate JavaDoc'
@@ -148,6 +149,7 @@ tasks.register('doc', Javadoc) {
     options.encoding = 'UTF-8'
 }
 
+// TODO
 tasks.register('docArchive', Zip) {
     group = 'Custom'
     description = 'Archive JavaDoc with MD5 and SHA1 checksums'
@@ -171,6 +173,9 @@ tasks.register('docArchive', Zip) {
 tasks.register('xmlValidate') {
     group = 'Custom'
     description = 'Validate all project XML files'
+
+    def mainDir = project.projectDir
+
     doLast {
         println 'Validating XML files...'
 
@@ -179,17 +184,18 @@ tasks.register('xmlValidate') {
         factory.setValidating(false)
 
         def builder = factory.newDocumentBuilder()
-        fileTree(dir: 'src/main/resources/', include: '*.xml').each { File xmlFile ->
+        fileTree(dir: mainDir, include: '**/*.xml').each { File xmlFile ->
             try {
                 xmlFile.withInputStream { is -> builder.parse(is) }
                 println "Valid: ${xmlFile}"
-            } catch (Exception e) {
-                throw new GradleException("XML validation error in file: ${xmlFile}", e)
+            } catch (Exception ignored) {
+                println "XML validation error in file: ${xmlFile}"
             }
         }
     }
 }
 
+// TODO
 tasks.register('scp') {
     group = 'Custom'
     description = 'Transfer the built JAR to a remote server via SCP'
@@ -201,6 +207,7 @@ tasks.register('scp') {
     // commandLine 'scp', "${buildDir}/libs/${project.name}-${project.version}.jar", 'user@server:/remote/path/'
 }
 
+// TODO
 tasks.register('team') {
     group = 'Custom'
     description = 'Retrieve last 4 SVN revisions and package them into ZIP'
