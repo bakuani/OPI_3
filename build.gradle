@@ -305,24 +305,35 @@ tasks.register('report') {
     }
 }
 
-// TODO
 tasks.register('alt') {
     group = 'Custom'
-    description = 'Create alternative version with name replacement via regex'
+    description = 'Create alternative version by replacing text in sources according to alt.properties and repackage JAR as alt.jar'
+
     doLast {
-        println 'Generating alternative project version with name replacement...'
-        def altSrcDir = file("$buildDir/altSrc")
-        copy {
-            from 'src/main/java'
-            into altSrcDir
-            filter { String line -> line.replaceAll('OldName', 'NewName') }
+        def sourceDir = file("src/main/java")
+        def altPropertiesFile = file("alt.properties")
+        if (!altPropertiesFile.exists()) {
+            throw new GradleException("File alt.properties not found. Please create it.")
         }
-        ant.javac(srcdir: altSrcDir, destdir: "$buildDir/altClasses",
-                classpath: configurations.compileClasspath.asPath)
-        ant.jar(destfile: "$buildDir/libs/${project.name}-alt.jar", basedir: "$buildDir/altClasses",
-                manifest: ['Main-Class': mainClass])
-        println 'Alternative JAR created: ' + "$buildDir/libs/${project.name}-alt.jar"
+
+        def altMapping = new Properties()
+        altPropertiesFile.withInputStream { stream ->
+            altMapping.load(stream)
+        }
+        println "Loaded replacements: ${altMapping}"
+
+        fileTree(sourceDir).matching { include '**/*.java' }.each { File file ->
+            def text = file.text
+            altMapping.each { key, value ->
+                text = text.replaceAll(key.toString(), value.toString())
+            }
+            file.write(text)
+        }
     }
+
+    tasks.alt.finalizedBy(tasks.build.configure {
+        tasks.bootJar.archiveFileName = 'alt.jar'
+    })
 }
 
 // TODO
