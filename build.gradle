@@ -1,6 +1,7 @@
 import javax.sound.sampled.*
 import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.api.plugins.jvm.JvmTestSuite
+import java.util.concurrent.ThreadLocalRandom
 
 plugins {
     id 'org.springframework.boot' version '3.4.5'
@@ -77,6 +78,7 @@ tasks.register('buildJar') {
 tasks.register('cleanArtifacts') {
     group = 'Custom'
     description = 'Clean build artifacts'
+    dependsOn 'clean'
 }
 
 tasks.register('unitTest') {
@@ -93,11 +95,21 @@ tasks.register('music') {
     group = 'Custom'
     description = 'Play music (la la la)'
     dependsOn 'buildJar'
-    doLast {
-        println 'Playing music...'
 
-        File audioFile = file("music/golos-domovenka-kuzi.wav")
-        AudioInputStream ais = AudioSystem.getAudioInputStream(audioFile)
+    doLast {
+        File musicDir = file("music")
+        File[] audioFiles = musicDir.listFiles({ file -> file.name.toLowerCase().endsWith(".wav") } as FileFilter)
+
+        if (audioFiles == null || audioFiles.length == 0) {
+            println "No .wav files found in the music directory."
+            return
+        }
+
+        println 'Playing random music...'
+
+        File randomFile = audioFiles[ThreadLocalRandom.current().nextInt(audioFiles.length)]
+
+        AudioInputStream ais = AudioSystem.getAudioInputStream(randomFile)
         Clip clip = AudioSystem.getClip()
         clip.open(ais)
         clip.start()
@@ -158,12 +170,14 @@ tasks.register('docArchive', Zip) {
 
 tasks.register('xmlValidate') {
     group = 'Custom'
-    description = 'Validate all project XML files using DocumentBuilder'
+    description = 'Validate all project XML files'
     doLast {
         println 'Validating XML files...'
+
         def factory = DocumentBuilderFactory.newInstance()
         factory.setNamespaceAware(true)
         factory.setValidating(false)
+
         def builder = factory.newDocumentBuilder()
         fileTree(dir: 'src/main/resources/', include: '*.xml').each { File xmlFile ->
             try {
