@@ -1,6 +1,8 @@
 import javax.sound.sampled.*
 import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.api.plugins.jvm.JvmTestSuite
+
+import java.security.MessageDigest
 import java.util.concurrent.ThreadLocalRandom
 
 plugins {
@@ -141,33 +143,12 @@ tasks.register('native2ascii') {
     }
 }
 
-// TODO
+// TODO: сейчас тут вообще нихуя не написано полезного
 tasks.register('doc', Javadoc) {
     group = 'Custom'
     description = 'Generate JavaDoc'
     destinationDir = file("$buildDir/docs/javadoc")
     options.encoding = 'UTF-8'
-}
-
-// TODO
-tasks.register('docArchive', Zip) {
-    group = 'Custom'
-    description = 'Archive JavaDoc with MD5 and SHA1 checksums'
-    dependsOn 'doc'
-    from doc.destinationDir
-    archiveFileName = "docs-${project.version}.zip"
-    doLast {
-        println 'Calculating MD5 and SHA1 for documentation files...'
-        fileTree(dir: doc.destinationDir, include: '**/*').files.each { File file ->
-            // Generate MD5
-            def md5 = file.bytes.encodeHex().toString()
-            file("${file}.md5").text = md5
-            def sha1Digest = java.security.MessageDigest.getInstance("SHA-1")
-            sha1Digest.update(file.bytes)
-            def sha1 = sha1Digest.digest().encodeHex().toString()
-            file("${file}.sha1").text = sha1
-        }
-    }
 }
 
 tasks.register('xmlValidate') {
@@ -229,7 +210,7 @@ tasks.register('scp', Exec) {
     }
 }
 
-// TODO
+// TODO: возможно нормально, но я хз как тестить svn пока что (возможно локально с помощью VisualSVN поднять)
 tasks.register('team') {
     group = 'Custom'
     description = 'Retrieve last 4 SVN revisions and package them into ZIP'
@@ -358,7 +339,7 @@ tasks.register('alt') {
     })
 }
 
-// TODO
+// TODO: изи таска по идеи, возможно уже готово, не тестил
 tasks.register('diff') {
     group = 'Custom'
     description = 'Check Git status and auto-commit changes if present'
@@ -375,7 +356,7 @@ tasks.register('diff') {
     }
 }
 
-// TODO
+// TODO: надо понять, как тестить svn и тогда вроде не сложно
 tasks.register('history') {
     group = 'Custom'
     description = 'Automatically revert to previous SVN revisions if build fails'
