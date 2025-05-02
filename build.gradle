@@ -201,17 +201,25 @@ tasks.register('scp', Exec) {
     dependsOn 'buildJar'
 
     doFirst {
+        def envFile = file("scp.properties")
+        if (!envFile.exists()) {
+            throw new GradleException("File scp.properties not found in project root")
+        }
+
+        def props = new Properties()
+        envFile.withInputStream { props.load(it) }
+
+        def password = props.getProperty("password")
+        def remoteUser = props.getProperty("remoteUser")
+        def remoteHost = props.getProperty("remoteHost")
+        def remotePort = props.getProperty("remotePort")
+        def remotePath = props.getProperty("remotePath")
+
         def jarFile = tasks.named('bootJar').get().archiveFile.get().asFile
         def winPath = jarFile.absolutePath
         def driveLetter = winPath.substring(0, 1).toLowerCase()
         def wslPath = winPath.replaceAll('\\\\', '/')
                 .replaceFirst(/^[a-zA-Z]:/, "/mnt/${driveLetter}")
-
-        def password = 'BDiU%9472'
-        def remoteUser = 's413022'
-        def remoteHost = 'helios.se.ifmo.ru'
-        def remotePort = '2222'
-        def remotePath = '/home/studs/s413022/'
 
         println "Executing SCP transfer using WSL for file ${wslPath}"
 
