@@ -195,16 +195,26 @@ tasks.register('xmlValidate') {
     }
 }
 
-// TODO
-tasks.register('scp') {
+tasks.register('scp', Exec) {
     group = 'Custom'
-    description = 'Transfer the built JAR to a remote server via SCP'
+    description = 'Transfer the built JAR via SCP in WSL'
     dependsOn 'buildJar'
-    doLast {
-        println 'Executing SCP transfer...'
-    }
-    // Replace user@server:/path with actual values
-    // commandLine 'scp', "${buildDir}/libs/${project.name}-${project.version}.jar", 'user@server:/remote/path/'
+
+    def jarFile = tasks.named('bootJar').get().archiveFile.get().asFile
+    def winPath = jarFile.absolutePath
+    def driveLetter = winPath.substring(0, 1).toLowerCase()
+    def wslPath = winPath.replaceAll('\\\\', '/').replaceFirst(/^[a-zA-Z]:/, "/mnt/${driveLetter}")
+
+    def password = 'BDiU%9472'
+    def remoteUser = 's413022'
+    def remoteHost = 'helios.se.ifmo.ru'
+    def remotePort = '2222'
+    def remotePath = '/home/studs/s413022/'
+
+    println "Executing SCP transfer using WSL for file"
+    commandLine 'wsl', 'sshpass', '-p', password,
+            'scp', '-P', remotePort, wslPath,
+            "${remoteUser}@${remoteHost}:${remotePath}"
 }
 
 // TODO
