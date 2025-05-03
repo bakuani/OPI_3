@@ -413,15 +413,18 @@ tasks.register('diff') {
 tasks.register('history') {
     group = 'Custom'
     description = 'Automatically revert to previous SVN revisions if build fails'
+
     doLast {
         println 'Attempting to build the project...'
 
-        def currentRev = ('svn info --show-item revision'.execute().text.trim() as int)
+        def currentRev = ('svn info -r HEAD --show-item revision'.execute().text.trim() as int)
         def rev = currentRev
 
         while (rev > 0) {
             try {
-                tasks.named('compile').get().actions.each { it.execute(compileTask) }
+                exec {
+                    commandLine "${projectDir}\\gradlew.bat", 'compile'
+                }
                 println "Build successful at revision $rev."
                 break
             } catch (Exception e) {
