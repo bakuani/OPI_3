@@ -1,7 +1,9 @@
-import javax.sound.sampled.*
-import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.api.plugins.jvm.JvmTestSuite
 
+import javax.sound.sampled.AudioInputStream
+import javax.sound.sampled.AudioSystem
+import javax.sound.sampled.Clip
+import javax.xml.parsers.DocumentBuilderFactory
 import java.security.MessageDigest
 import java.util.concurrent.ThreadLocalRandom
 
@@ -143,13 +145,42 @@ tasks.register('native2ascii') {
     }
 }
 
-// TODO: сейчас тут вообще нихуя не написано полезного
+
 tasks.register('doc', Javadoc) {
     group = 'Custom'
-    description = 'Generate JavaDoc'
-    destinationDir = file("$buildDir/docs/javadoc")
+    description = 'Generate Javadoc, compute MD5/SHA‑1 of bootJar, write MANIFEST.MF and pack docs into ZIP'
+    dependsOn 'bootJar'
+
+    source = sourceSets.main.allJava
+    classpath = sourceSets.main.compileClasspath
+
+    destinationDir = layout.buildDirectory.dir('docs/javadoc').get().asFile
     options.encoding = 'UTF-8'
+
+    doLast {
+        def docsDir = destinationDir
+        def metaInf = new File(docsDir, 'META-INF')
+        metaInf.mkdirs()
+
+        def mainJar = tasks.named('bootJar', Jar).get().archiveFile.get().asFile
+        def bytes = mainJar.bytes
+
+        def md5 = MessageDigest.getInstance('MD5').digest(bytes).encodeHex().toString()
+        def sha1 = MessageDigest.getInstance('SHA-1').digest(bytes).encodeHex().toString()
+
+        def mf = new File(metaInf, 'MANIFEST.MF')
+        mf.text = """Manifest-Version: 1.0
+Project-MD5: ${md5}
+Project-SHA1: ${sha1}
+"""
+
+        def zipFile = layout.buildDirectory.file("archives/${project.name}-${project.version}-javadoc.zip").get().asFile
+        ant.zip(destfile: zipFile, basedir: docsDir)
+
+        println "Javadoc ZIP with manifest written to: ${zipFile}"
+    }
 }
+
 
 tasks.register('xmlValidate') {
     group = 'Custom'

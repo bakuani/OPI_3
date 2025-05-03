@@ -8,9 +8,12 @@ import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Application user entity implementing Spring Security’s UserDetails.
+ * Stores username, password, and role information.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,12 +25,15 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Unique username for login. */
     @Column(unique = true, nullable = false)
     private String username;
 
+    /** Encrypted password. */
     @Column(nullable = false)
     private String password;
 
+    /** Role assigned to this user (e.g. USER). */
     @Enumerated(EnumType.STRING)
     private UserRole role;
 
@@ -35,4 +41,11 @@ public class User implements UserDetails {
     public List<? extends GrantedAuthority> getAuthorities() {
         return (role == null) ? List.of() : List.of(role);
     }
+
+    @Override public String getPassword() { return password; }
+    @Override public String getUsername() { return username; }
+    @Override public boolean isAccountNonExpired() { return true; }
+    @Override public boolean isAccountNonLocked() { return true; }
+    @Override public boolean isCredentialsNonExpired() { return true; }
+    @Override public boolean isEnabled() { return true; }
 }
