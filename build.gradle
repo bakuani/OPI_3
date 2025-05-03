@@ -339,7 +339,6 @@ tasks.register('alt') {
     })
 }
 
-// TODO: изи таска по идеи, возможно уже готово, не тестил
 tasks.register('diff') {
     group = 'Custom'
     description = 'Check Git status and auto-commit changes if present'
