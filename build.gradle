@@ -339,6 +339,18 @@ tasks.register('alt') {
     })
 }
 
+tasks.register('gitAdd', Exec) {
+    group = 'Custom'
+    description = 'Add all changes in Git'
+    commandLine 'git', 'add', '--all'
+}
+
+tasks.register('gitCommit', Exec) {
+    group = 'Custom'
+    description = 'Commit changes in Git'
+    commandLine 'git', 'commit', '-m', 'Auto commit changes'
+}
+
 tasks.register('diff') {
     group = 'Custom'
     description = 'Check Git status and auto-commit changes if present'
@@ -347,8 +359,8 @@ tasks.register('diff') {
         def status = 'git status --porcelain'.execute().text.trim()
         if (status) {
             println 'Changes detected, committing...'
-            exec { commandLine 'git', 'add', '--all' }
-            exec { commandLine 'git', 'commit', '-m', "Auto commit changes" }
+            tasks.named("gitAdd").get().exec()
+            tasks.named("gitCommit").get().exec()
         } else {
             println 'No changes to commit.'
         }
