@@ -410,27 +410,41 @@ tasks.register('diff') {
     }
 }
 
-// TODO: надо понять, как тестить svn и тогда вроде не сложно
 tasks.register('history') {
     group = 'Custom'
     description = 'Automatically revert to previous SVN revisions if build fails'
     doLast {
         println 'Attempting to build the project...'
+
         def currentRev = ('svn info --show-item revision'.execute().text.trim() as int)
         def rev = currentRev
+
         while (rev > 0) {
             try {
-                exec { commandLine 'gradle', 'buildJar' }
+                tasks.named('compile').get().actions.each { it.execute(compileTask) }
                 println "Build successful at revision $rev."
                 break
             } catch (Exception e) {
+                println e
                 rev--
                 if (rev <= 0) {
                     println 'Failed to build any revision.'
                     break
                 }
+
                 println "Build failed, reverting to revision $rev..."
+
                 exec { commandLine 'svn', 'update', '-r', rev.toString() }
+
+                if (rev + 1 <= currentRev) {
+                    println "Generating diff between revision ${rev + 1} and $rev..."
+                    def diffFile = file("$buildDir/svn_diff_rev_${rev}.patch")
+                    exec {
+                        commandLine 'svn', 'diff', '-r', "${rev + 1}:${rev}"
+                        standardOutput = diffFile.newOutputStream()
+                    }
+                    println "Diff file created: ${diffFile.absolutePath}"
+                }
             }
         }
     }
