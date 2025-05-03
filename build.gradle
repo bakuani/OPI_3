@@ -241,35 +241,47 @@ tasks.register('scp', Exec) {
     }
 }
 
-// TODO: возможно нормально, но я хз как тестить svn пока что (возможно локально с помощью VisualSVN поднять)
 tasks.register('team') {
     group = 'Custom'
-    description = 'Retrieve last 4 SVN revisions and package them into ZIP'
+    description = 'Retrieve last 2 SVN revisions and package them into ZIP'
+    dependsOn 'buildJar'
+
     doLast {
-        println 'Fetching last 4 SVN revisions...'
+        println 'Fetching last 2 SVN revisions...'
+
         def revisions = []
-        def log = 'svn log -l 4 --quiet'.execute().text
+        def log = 'svn log -l 2 --quiet'.execute().text
         log.eachLine { line ->
-            if (line =~ /^r(\d+)/) {
-                revisions << (line =~ /^r(\d+)/)[0][1]
+            def matcher = (line =~ /^r(\d+)/)
+            if (matcher.find()) {
+                revisions << matcher.group(1)
             }
         }
+
         def tmpDir = file("$buildDir/svnRevs")
         tmpDir.mkdirs()
+
         revisions.each { rev ->
-            println "Updating SVN to revision $rev and building project..."
-            exec { commandLine 'svn', 'update', '-r', rev }
-            exec { commandLine 'gradle', 'buildJar' }  // recursive task invocation
+            println "Updating to revision $rev..."
+            exec {
+                commandLine 'svn', 'update', '-r', rev,
+                        '--username', 'urasha', '--password', 'admin', '--non-interactive'
+            }
+
+            println "Building jar for revision $rev..."
+
             copy {
-                from "${buildDir}/libs/${project.name}-${project.version}.jar"
+                from file("${buildDir}/libs/${project.name}-${project.version}.jar")
                 into tmpDir
                 rename { "${project.name}-${rev}.jar" }
             }
         }
+
         ant.zip(destfile: "$buildDir/archives/team_revisions.zip", basedir: tmpDir)
         println 'Archive with previous revisions is ready.'
     }
 }
+
 
 tasks.register('env', JavaExec) {
     group = 'Build'
