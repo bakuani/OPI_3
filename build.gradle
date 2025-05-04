@@ -258,7 +258,7 @@ tasks.register('team') {
             }
         }
 
-        def tmpDir = file("$buildDir/svnRevs")
+        def tmpDir = layout.buildDirectory.dir("svnRevs").get().asFile
         tmpDir.mkdirs()
 
         revisions.each { rev ->
@@ -271,13 +271,13 @@ tasks.register('team') {
             println "Building jar for revision $rev..."
 
             copy {
-                from file("${buildDir}/libs/${project.name}-${project.version}.jar")
+                from(layout.buildDirectory.file("libs/${project.name}-${project.version}.jar"))
                 into tmpDir
                 rename { "${project.name}-${rev}.jar" }
             }
         }
 
-        ant.zip(destfile: "$buildDir/archives/team_revisions.zip", basedir: tmpDir)
+        ant.zip(destfile: layout.buildDirectory.file("archives/team_revisions.zip").get().asFile.path)
         println 'Archive with previous revisions is ready.'
     }
 }
@@ -397,6 +397,7 @@ tasks.register('gitCommit', Exec) {
 tasks.register('diff') {
     group = 'Custom'
     description = 'Check Git status and auto-commit changes if present'
+
     doLast {
         println 'Checking for Git changes...'
         def status = 'git status --porcelain'.execute().text.trim()
@@ -441,7 +442,7 @@ tasks.register('history') {
 
                 if (rev + 1 <= currentRev) {
                     println "Generating diff between revision ${rev + 1} and $rev..."
-                    def diffFile = file("$buildDir/svn_diff_rev_${rev}.patch")
+                    def diffFile = layout.buildDirectory.file("svn_diff_rev_${rev}.patch").get().asFile
                     exec {
                         commandLine 'svn', 'diff', '-r', "${rev + 1}:${rev}"
                         standardOutput = diffFile.newOutputStream()
