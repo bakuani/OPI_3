@@ -59,14 +59,6 @@ jar {
     }
 }
 
-testing {
-    suites {
-        test(JvmTestSuite) {
-            useJUnitJupiter()
-        }
-    }
-}
-
 tasks.register('compile') {
     group = 'Custom'
     description = 'Compile sources'
@@ -85,10 +77,16 @@ tasks.register('cleanArtifacts') {
     dependsOn 'clean'
 }
 
-tasks.register('unitTest') {
+tasks.named('test') {
     group = 'Custom'
     description = 'Run JUnit tests'
-    dependsOn 'buildJar', 'test'
+    dependsOn 'buildJar'
+
+    useJUnitPlatform()
+
+    testLogging {
+        events "passed", "failed"
+    }
 
     doLast {
         println 'JUnit tests completed.'
