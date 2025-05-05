@@ -125,7 +125,7 @@ tasks.register('music') {
 
 tasks.register('native2ascii') {
     group = 'Custom'
-    description = 'Convert .properties files from UTF-8 to ASCII'
+    description = 'Convert .properties files from UTF-8 to ASCII using custom implementation'
 
     def srcDir = file('src/main/resources/locales/')
     def destDir = layout.buildDirectory.dir('converted-resources').get().asFile
@@ -134,14 +134,30 @@ tasks.register('native2ascii') {
     outputs.dir destDir
 
     doLast {
-        ant.native2ascii(
-                src: srcDir,
-                dest: destDir,
-                encoding: 'UTF-8',
-                includes: '**/*.properties'
-        )
+        fileTree(dir: srcDir, include: '**/*.properties').each { File sourceFile ->
+            def relativePath = sourceFile.absolutePath - srcDir.absolutePath
+            def destFile = new File(destDir, relativePath)
+            if (!destFile.parentFile.exists()) {
+                destFile.parentFile.mkdirs()
+            }
+
+            def inputText = sourceFile.getText('UTF-8')
+            def outputText = new StringBuilder()
+            inputText.each { ch ->
+                int code = (int) ch
+                if (code < 128) {
+                    outputText.append(ch)
+                } else {
+                    outputText.append(format("\\u%04X", code))
+                }
+            }
+
+            destFile.write(outputText.toString(), 'US-ASCII')
+            println "Converted ${sourceFile} → ${destFile}"
+        }
     }
 }
+
 
 
 tasks.register('doc', Javadoc) {
